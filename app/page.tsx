@@ -174,8 +174,8 @@ export default function Page() {
                       Pedido por <span className="font-medium">{p.nombre}</span>
                     </div>
                     {p.dedicatoria && (
-                      <div className="text-gray-500 italic">"{p.dedicatoria}"</div>
-                    )}
+  <div className="text-gray-500 italic">&quot;{p.dedicatoria}&quot;</div>
+)}
                     <div className="text-xs text-gray-400">
                       {new Date(p.fecha_hora).toLocaleString()}
                     </div>

@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 
 export const config = {
   api: {
@@ -8,7 +8,6 @@ export const config = {
   },
 };
 
-// Instancia global de Socket.IO
 let io: Server | null = null;
 
 export const GET = (_req: NextRequest) => {
@@ -26,7 +25,7 @@ export const POST = (_req: NextRequest) => {
 };
 
 // Inicializa Socket.IO
-export async function handler(req: any, res: any) {
+export async function handler(req: unknown, res: any) {
   if (!res.socket.server.io) {
     io = new Server(res.socket.server);
     res.socket.server.io = io;

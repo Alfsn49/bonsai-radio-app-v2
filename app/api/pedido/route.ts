@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "../../../lib/db";
+import type { Server as IOServer } from "socket.io";
 
 interface Pedido {
   nombre: string;
@@ -9,8 +10,17 @@ interface Pedido {
   fecha_hora: string;
 }
 
-export async function POST(req: NextRequest) {
-  const body: Pedido = await req.json(); // Tipamos body como Pedido
+// Extendemos NextRequest para incluir socket
+interface NextRequestWithSocket extends NextRequest {
+  socket?: {
+    server?: {
+      io?: IOServer;
+    };
+  };
+}
+
+export async function POST(req: NextRequestWithSocket) {
+  const body: Pedido = await req.json();
   const { nombre, cancion, dedicatoria, artista, fecha_hora } = body;
 
   const db = await getDb();
@@ -26,8 +36,8 @@ export async function POST(req: NextRequest) {
   );
 
   // Emitimos el nuevo pedido vía Socket.IO
-  if ((req as any).socket?.server?.io) {
-    const io = (req as any).socket.server.io;
+  const io = req.socket?.server?.io;
+  if (io) {
     io.emit("nuevo_pedido", body);
   }
 
