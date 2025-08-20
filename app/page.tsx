@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import toast, { Toaster } from 'react-hot-toast';
+import Image from 'next/image';
 
 interface Pedido {
   nombre: string;
@@ -98,10 +99,11 @@ export default function Page() {
       {/* Slider */}
 <div className="w-full rounded-2xl shadow-lg overflow-hidden relative min-h-[550px] sm:min-h-[320px] md:min-h-[600px]">
   {imagenes.length ? (
-    <img
+    <Image
       src={`/img/${imagenes[index]}`}
       alt="Slider"
-      className="absolute top-0 left-0 w-full h-full object-cover"
+      fill // esta es la clave
+      style={{ objectFit: "cover" }} // reemplaza object-cover
     />
   ) : (
     <span className="text-white p-4">No hay imágenes</span>
@@ -150,9 +152,6 @@ export default function Page() {
     🎵 Enviar pedido
   </button>
 </form>
-
-
-
         {/* Lista de pedidos */}
         <div className="bg-white/70 backdrop-blur-md p-6 rounded-2xl shadow-lg max-h-[500px] overflow-y-auto">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">📜 Lista de pedidos</h2>
