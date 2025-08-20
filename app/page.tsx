@@ -1,103 +1,207 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+import { useEffect, useState } from "react";
+import { io, Socket } from "socket.io-client";
+import toast, { Toaster } from 'react-hot-toast';
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+interface Pedido {
+  nombre: string;
+  cancion: string;
+  dedicatoria?: string;
+  artista?: string;
+  fecha_hora: string;
+}
+
+export default function Page() {
+ const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [index, setIndex] = useState(0);
+  const imagenes = Array.from({ length: 30 }, (_, i) => `slider${i + 1}.jpg`);
+
+  // Inicializamos Socket.IO
+  useEffect(() => {
+    const s: Socket = io("/", { path: "/api/socket" });
+    setSocket(s);
+
+    const handleNuevoPedido = (pedido: Pedido) => {
+      setPedidos((prev) => [pedido, ...prev]);
+      toast(`Nuevo pedido: ${pedido.cancion} - ${pedido.artista || "Desconocido"}`);
+    };
+
+    s.on("nuevo_pedido", handleNuevoPedido);
+
+    return () => {
+      s.off("nuevo_pedido", handleNuevoPedido);
+      s.disconnect();
+    };
+  }, []);
+
+  // Al cargar la página
+  useEffect(() => {
+    fetch("/api/pedido")
+      .then(res => res.json())
+      .then(setPedidos);
+  }, []);
+
+  // Slider automático
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % imagenes.length);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [imagenes]);
+
+  // Función para enviar pedido
+  const enviarPedido = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!socket) return;
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const data: Pedido = {
+      nombre: formData.get("nombre") as string,
+      cancion: formData.get("cancion") as string,
+      dedicatoria: (formData.get("dedicatoria") as string) || "",
+      artista: (formData.get("artista") as string) || "",
+      fecha_hora: new Date().toISOString(),
+    };
+
+    try {
+      await fetch("/api/pedido", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      setPedidos((prev) => [data, ...prev]);
+
+      // Mostrar notificación de éxito
+      toast.success(`Pedido enviado: ${data.cancion} - ${data.artista || "Desconocido"}`);
+
+      form.reset();
+    } catch (err) {
+      console.error("Error al enviar pedido:", err);
+      toast.error("No se pudo enviar el pedido");
+    }
+  };
+ return (
+  <div className="min-h-screen bg-gradient-to-br from-pink-200 via-purple-200 to-indigo-200 p-6">
+    <Toaster position="top-right" reverseOrder={false} />
+    <h1 className="text-5xl font-extrabold text-center text-pink-600 drop-shadow mb-8">
+      🎧 Bonsai Arisa 2.0 - Radio Anime
+    </h1>
+
+    {/* Contenedor principal: slider a la izquierda, form + pedidos a la derecha */}
+    <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
+      {/* Slider */}
+<div className="w-full rounded-2xl shadow-lg overflow-hidden relative min-h-[550px] sm:min-h-[320px] md:min-h-[600px]">
+  {imagenes.length ? (
+    <img
+      src={`/img/${imagenes[index]}`}
+      alt="Slider"
+      className="absolute top-0 left-0 w-full h-full object-cover"
+    />
+  ) : (
+    <span className="text-white p-4">No hay imágenes</span>
+  )}
+</div>
+
+      {/* Formulario + Lista de pedidos */}
+      <div className="lg:w-1/2 w-full flex flex-col gap-6">
+        {/* Formulario */}
+        <form
+  onSubmit={enviarPedido}
+  className="space-y-4 p-6 rounded-2xl shadow-lg bg-white/70 backdrop-blur-md"
+>
+  <h2 className="text-xl font-semibold text-gray-700 mb-2">Haz tu pedido 🎶</h2>
+
+  <input
+    name="nombre"
+    placeholder="Tu nombre"
+    required
+    className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white placeholder-gray-500 text-gray-900"
+  />
+
+  <input
+    name="cancion"
+    placeholder="Nombre de la canción"
+    required
+    className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white placeholder-gray-500 text-gray-900"
+  />
+
+  <input
+    name="artista"
+    placeholder="Artista"
+    className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white placeholder-gray-500 text-gray-900"
+  />
+
+  <textarea
+    name="dedicatoria"
+    placeholder="Dedicatoria (opcional)"
+    className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white placeholder-gray-500 text-gray-900"
+  />
+
+  <button
+    type="submit"
+    className="bg-pink-500 hover:bg-pink-600 text-white w-full py-3 rounded-lg font-semibold shadow-md transition-all duration-300"
+  >
+    🎵 Enviar pedido
+  </button>
+</form>
+
+
+
+        {/* Lista de pedidos */}
+        <div className="bg-white/70 backdrop-blur-md p-6 rounded-2xl shadow-lg max-h-[500px] overflow-y-auto">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">📜 Lista de pedidos</h2>
+          <div className="space-y-4">
+            {pedidos.length === 0 ? (
+              <p className="text-gray-500 italic">No hay pedidos aún</p>
+            ) : (
+              pedidos.map((p, i) => (
+                <div
+                  key={i}
+                  className="flex items-start space-x-3 bg-white rounded-lg shadow p-3"
+                >
+                  <div className="w-10 h-10 rounded-full bg-pink-400 flex items-center justify-center text-white font-bold">
+                    {p.nombre.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <strong className="text-pink-600">{p.cancion}</strong>{" "}
+                    <span className="text-gray-700">- {p.artista || "Desconocido"}</span>
+                    <div className="text-sm text-gray-600">
+                      Pedido por <span className="font-medium">{p.nombre}</span>
+                    </div>
+                    {p.dedicatoria && (
+                      <div className="text-gray-500 italic">"{p.dedicatoria}"</div>
+                    )}
+                    <div className="text-xs text-gray-400">
+                      {new Date(p.fecha_hora).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
     </div>
-  );
+
+    {/* Reproductor de radio debajo de todo */}
+    <section className="flex justify-center mt-10">
+      <iframe
+        src="https://zeno.fm/player/bonsai-arisa"
+        width="575"
+        height="250"
+        frameBorder="0"
+        scrolling="no"
+        className="rounded-xl shadow-lg"
+        allow="autoplay"
+      ></iframe>
+    </section>
+  </div>
+);
+
 }
