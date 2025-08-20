@@ -1,16 +1,6 @@
-import { NextRequest } from "next/server";
 import { Server } from "socket.io";
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
-export const GET = (req: NextRequest) => {
-  return NextResponse.json({ message: "Socket.IO endpoint" });
-};
-
-export const POST = (req: NextRequest) => {
-  return NextResponse.json({ message: "Socket.IO POST endpoint" });
-};
-
-// Este archivo será usado solo para inicializar el servidor Socket.IO
 export const config = {
   api: {
     bodyParser: false,
@@ -18,8 +8,24 @@ export const config = {
   },
 };
 
+// Instancia global de Socket.IO
 let io: Server | null = null;
 
+export const GET = (_req: NextRequest) => {
+  return new Response(JSON.stringify({ message: "Socket.IO endpoint" }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+};
+
+export const POST = (_req: NextRequest) => {
+  return new Response(JSON.stringify({ message: "Socket.IO POST endpoint" }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+};
+
+// Inicializa Socket.IO
 export async function handler(req: any, res: any) {
   if (!res.socket.server.io) {
     io = new Server(res.socket.server);

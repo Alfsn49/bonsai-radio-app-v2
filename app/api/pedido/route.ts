@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "../../../lib/db";
 
+interface Pedido {
+  nombre: string;
+  cancion: string;
+  dedicatoria?: string;
+  artista?: string;
+  fecha_hora: string;
+}
+
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  const body: Pedido = await req.json(); // Tipamos body como Pedido
   const { nombre, cancion, dedicatoria, artista, fecha_hora } = body;
 
   const db = await getDb();
-  // Eliminar pedidos viejos
-await db.run(`DELETE FROM pedidos WHERE fecha_hora <= datetime('now', '-3 days')`);
+  await db.run(`DELETE FROM pedidos WHERE fecha_hora <= datetime('now', '-3 days')`);
 
   await db.run(
     `INSERT INTO pedidos (nombre, cancion, dedicatoria, artista, fecha_hora) VALUES (?, ?, ?, ?, ?)`,
@@ -19,14 +26,13 @@ await db.run(`DELETE FROM pedidos WHERE fecha_hora <= datetime('now', '-3 days')
   );
 
   // Emitimos el nuevo pedido vía Socket.IO
-  const io = (req as any).socket?.server?.io;
-  if (io) {
+  if ((req as any).socket?.server?.io) {
+    const io = (req as any).socket.server.io;
     io.emit("nuevo_pedido", body);
   }
 
   return NextResponse.json({ ok: true });
 }
-
 
 export async function GET() {
   const db = await getDb();
