@@ -1,6 +1,7 @@
 // app/api/pedido/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getIO } from "@/lib/socket"; // importamos nuestro singleton de socket
 
 export async function GET() {
   try {
@@ -25,7 +26,13 @@ export async function POST(req: Request) {
 
     const nuevo = await prisma.pedido.create({ data });
 
-    // Retornar el pedido creado
+    try {
+      const io = getIO();
+      io.emit("nuevo_pedido", nuevo);
+    } catch {
+      console.warn("⚠️ Socket.IO no inicializado");
+    }
+
     return NextResponse.json(nuevo, { status: 201 });
   } catch (error) {
     console.error("Error POST /api/pedido:", error);

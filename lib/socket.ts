@@ -1,21 +1,22 @@
-// lib/socket.ts
-import { Server as IOServer } from "socket.io";
-import { Server as HTTPServer } from "http";
+import { Server } from "socket.io";
 
-let io: IOServer | null = null;
+let io: Server | null = null;
 
-export function initIO(server: HTTPServer) {
-  if (!io) {
-    io = new IOServer(server, { cors: { origin: "*" } });
+export const getIO = (res?: any) => {
+  if (io) return io;
 
-    io.on("connection", socket => {
-      console.log("🟢 Cliente conectado", socket.id);
+  if (res) {
+    io = new Server(res.socket.server, {
+      cors: { origin: "*" },
     });
-  }
-  return io;
-}
+    res.socket.server.io = io;
 
-export function getIO() {
-  if (!io) throw new Error("Socket.IO no inicializado");
-  return io;
-}
+    io.on("connection", (socket) => {
+      console.log("🟢 Cliente conectado:", socket.id);
+    });
+
+    return io;
+  }
+
+  throw new Error("Socket.IO no inicializado");
+};

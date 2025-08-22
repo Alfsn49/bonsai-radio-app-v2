@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { io, Socket } from "socket.io-client";
-import toast from "react-hot-toast";  // ✅ cambiar a react-hot-toast
+import toast from "react-hot-toast";
 
 export interface Pedido {
   id: number;
@@ -13,54 +13,50 @@ export interface Pedido {
   fecha_hora: string;
 }
 
+// Singleton del socket
+let socket: Socket | null = null;
+
 export function usePedidos() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
-  const [socket, setSocket] = useState<Socket | null>(null);
 
-  // 🔹 Cargar pedidos iniciales
+  // Cargar pedidos iniciales
   useEffect(() => {
     const cargarPedidos = async () => {
-  try {
-    const res = await fetch("/api/pedido", { cache: "no-store" }); // evita caching
-    if (!res.ok) throw new Error(`Error cargando pedidos: ${res.status}`);
-    const data: Pedido[] = await res.json();
-    setPedidos(data);
-  } catch (error) {
-    console.error("Error al cargar pedidos:", error);
-    toast.error("No se pudo cargar la lista de pedidos"); // opcional
-  }
-};
-
+      try {
+        const res = await fetch("/api/pedido", { cache: "no-store" });
+        if (!res.ok) throw new Error(`Error cargando pedidos: ${res.status}`);
+        const data: Pedido[] = await res.json();
+        setPedidos(data);
+      } catch (error) {
+        console.error("Error al cargar pedidos:", error);
+        toast.error("No se pudo cargar la lista de pedidos");
+      }
+    };
     cargarPedidos();
   }, []);
 
-  // 🔹 Conectar socket
+  // Conectar socket solo una vez
   useEffect(() => {
-    const s: Socket = io({ path: "/api/socket" });
-    setSocket(s);
+    if (!socket) {
+      socket = io({ path: "/api/socket" });
 
-    const handleNuevoPedido = (pedido: Pedido) => {
-      setPedidos((prev) => {
-        // Evitar duplicados (ej: cuando POST ya devolvió el pedido)
-        if (prev.find((p) => p.id === pedido.id)) {
-          return prev;
-        }
-        return [pedido, ...prev];
+      socket.on("nuevo_pedido", (pedido: Pedido) => {
+        setPedidos((prev) => {
+          if (prev.find((p) => p.id === pedido.id)) return prev;
+          return [pedido, ...prev];
+        });
+        toast.success(`🎶 Nuevo pedido: ${pedido.cancion} - ${pedido.artista || "Desconocido"}`);
       });
-
-      // ✅ toast con react-hot-toast
-      toast.success(`🎶 Nuevo pedido: ${pedido.cancion} - ${pedido.artista || "Desconocido"}`);
-    };
-
-    s.on("nuevo_pedido", handleNuevoPedido);
+    }
 
     return () => {
-      s.off("nuevo_pedido", handleNuevoPedido);
-      s.disconnect();
+      if (socket) {
+        socket.off("nuevo_pedido");
+      }
     };
   }, []);
 
-  // 🔹 Función para enviar un nuevo pedido
+  // Enviar nuevo pedido
   const enviarPedido = async (nuevo: Omit<Pedido, "id" | "fecha_hora">) => {
     try {
       const res = await fetch("/api/pedido", {

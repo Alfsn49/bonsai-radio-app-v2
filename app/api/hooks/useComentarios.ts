@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 import toast from "react-hot-toast";
 
-
 export interface Comentario {
   id: number;
   nombre: string;
@@ -13,9 +12,11 @@ export interface Comentario {
   fecha_hora: string;
 }
 
+// Singleton del socket para que no se reconecte múltiples veces
+let socket: Socket | null = null;
+
 export function useComentarios() {
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
-  const [socket, setSocket] = useState<Socket | null>(null);
 
   // Cargar iniciales
   useEffect(() => {
@@ -33,21 +34,21 @@ export function useComentarios() {
     cargar();
   }, []);
 
-  // Conectar socket
+  // Conectar socket solo una vez
   useEffect(() => {
-    const s: Socket = io({ path: "/api/socket" });
-    setSocket(s);
+    if (!socket) {
+      socket = io({ path: "/api/socket" });
 
-    const handleNuevo = (c: Comentario) => {
-      setComentarios((prev) => [c, ...prev]);
-      toast(`💬 ${c.nombre}: ${c.mensaje}`);
-    };
-
-    s.on("nuevo_comentario", handleNuevo);
+      socket.on("nuevo_comentario", (c: Comentario) => {
+        setComentarios((prev) => [c, ...prev]);
+        toast(`💬 ${c.nombre}: ${c.mensaje}`);
+      });
+    }
 
     return () => {
-      s.off("nuevo_comentario", handleNuevo);
-      s.disconnect();
+      if (socket) {
+        socket.off("nuevo_comentario");
+      }
     };
   }, []);
 
