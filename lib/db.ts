@@ -1,6 +1,9 @@
-import { PrismaClient } from "@/lib/generated/prisma";
+// lib/prisma.ts
+import { PrismaClient } from "@prisma/client";
 
 declare global {
+  // Evita que en desarrollo se creen múltiples instancias de PrismaClient
+  // y te lance warning sobre demasiadas conexiones
   var prisma: PrismaClient | undefined;
 }
 

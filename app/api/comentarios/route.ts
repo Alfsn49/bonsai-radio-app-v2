@@ -1,6 +1,6 @@
 // app/api/comentarios/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "../../../lib/db";
+import { prisma } from "@/lib/db";
 import { getIO } from "@/lib/socket";
 
 // GET comentarios recientes
