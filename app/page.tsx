@@ -139,49 +139,60 @@ export default function Page() {
     </div>
 
     {/* Columna 3: Comentarios */}
-    <div className="w-full lg:w-1/3 flex flex-col gap-4">
-      <div ref={comentariosRef} className="bg-white/70 backdrop-blur-md p-6 rounded-2xl shadow-lg max-h-[700px] overflow-y-auto flex-1">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">💬 Comentarios en vivo</h2>
+<div className="w-full lg:w-1/3 flex flex-col gap-4">
+  {/* Contenedor de comentarios */}
+  <div
+    ref={comentariosRef}
+    className="bg-white p-6 rounded-2xl shadow-lg max-h-[700px] overflow-y-auto flex-1"
+  >
+    <h2 className="text-2xl font-semibold text-gray-800 mb-4">💬 Comentarios en vivo</h2>
 
-        {comentarios.length === 0 ? (
-          <p className="text-gray-500 italic text-center">No hay comentarios aún</p>
-        ) : (
-          <div className="space-y-3">
-            {comentarios.map((c) => (
-              <div key={c.id} className="bg-white rounded-lg p-3 shadow flex flex-col justify-between">
-                <div>
-                  <span className="font-bold text-pink-600">{c.nombre}:</span> {c.mensaje}
-                </div>
-                <div className="text-xs text-gray-400 mt-2">{new Date(c.fecha_hora).toLocaleTimeString()}</div>
-              </div>
-            ))}
+    {comentarios.length === 0 ? (
+      <p className="text-gray-500 italic text-center">No hay comentarios aún</p>
+    ) : (
+      <div className="space-y-3">
+        {comentarios.map((c) => (
+          <div
+            key={c.id}
+            className="bg-pink-50 rounded-lg p-4 shadow flex flex-col justify-between"
+          >
+            <div className="text-gray-900">
+              <span className="font-bold text-pink-600">{c.nombre}:</span>{" "}
+              {c.mensaje}
+            </div>
+            <div className="text-xs text-gray-500 mt-2">
+              {new Date(c.fecha_hora).toLocaleTimeString()}
+            </div>
           </div>
-        )}
+        ))}
       </div>
+    )}
+  </div>
 
-      {/* Formulario de comentarios */}
-<form onSubmit={handleComentario} className="flex flex-col gap-2 mt-2">
-  <input
-    value={nombre}
-    onChange={(e) => setNombre(e.target.value)}
-    placeholder="Tu nombre"
-    className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white text-gray-900"
-    required
-  />
+  {/* Formulario de comentarios */}
+  <form onSubmit={handleComentario} className="flex flex-col gap-3 mt-2">
+    <input
+      value={nombre}
+      onChange={(e) => setNombre(e.target.value)}
+      placeholder="Tu nombre"
+      className="w-full p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white text-gray-900 text-lg"
+      required
+    />
 
-  <textarea
-    value={mensaje}
-    onChange={(e) => setMensaje(e.target.value)}
-    placeholder="Escribe tu comentario"
-    className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white text-gray-900 resize-none h-32"
-    required
-  />
+    <textarea
+      value={mensaje}
+      onChange={(e) => setMensaje(e.target.value)}
+      placeholder="Escribe tu comentario"
+      className="w-full p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white text-gray-900 text-lg resize-none h-40"
+      required
+    />
 
-  <button className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold shadow-md transition-all duration-300">
-    Enviar
-  </button>
-</form>
-    </div>
+    <button className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold shadow-md transition-all duration-300 text-lg">
+      Enviar
+    </button>
+  </form>
+</div>
+
   </div>
 
   {/* Reproductor de radio */}

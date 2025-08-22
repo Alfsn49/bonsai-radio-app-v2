@@ -1,6 +1,6 @@
 // app/api/comentarios/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "../../../lib/db"; // ruta relativa correcta
+import { prisma } from "../../../lib/db";
 import { getIO } from "@/lib/socket";
 
 // GET comentarios recientes
@@ -22,6 +22,19 @@ export async function POST(req: Request) {
   try {
     const data = await req.json();
 
+    // 🔹 Eliminar comentarios más antiguos a 3 días
+    const tresDiasAntes = new Date();
+    tresDiasAntes.setDate(tresDiasAntes.getDate() - 3);
+
+    await prisma.comentario.deleteMany({
+      where: {
+        fecha_hora: {
+          lt: tresDiasAntes,
+        },
+      },
+    });
+
+    // 🔹 Crear el nuevo comentario
     const nuevo = await prisma.comentario.create({
       data: {
         nombre: data.nombre,
