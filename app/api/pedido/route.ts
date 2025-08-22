@@ -1,7 +1,6 @@
-// app/api/pedido/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getIO } from "@/lib/socket"; // importamos nuestro singleton de socket
+import { getIO } from "@/lib/socket";
 
 export async function GET() {
   try {
@@ -24,8 +23,10 @@ export async function POST(req: Request) {
       where: { fecha_hora: { lte: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) } },
     });
 
+    // Crear nuevo pedido
     const nuevo = await prisma.pedido.create({ data });
 
+    // Emitir a todos los clientes conectados
     try {
       const io = getIO();
       io.emit("nuevo_pedido", nuevo);
