@@ -1,3 +1,4 @@
+// lib/socket.ts
 import { Server as IOServer } from "socket.io";
 import { Server as HTTPServer } from "http";
 

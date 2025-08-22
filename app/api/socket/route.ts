@@ -1,3 +1,4 @@
+// app/api/socket/route.ts
 import { Server } from "socket.io";
 import type { NextRequest } from "next/server";
 
@@ -24,14 +25,16 @@ export const POST = (_req: NextRequest) => {
   });
 };
 
-// Inicializa Socket.IO
-export async function handler(req: unknown, res: any) {
+// Inicializa Socket.IO en el servidor Next.js
+export async function handler(req: any, res: any) {
   if (!res.socket.server.io) {
-    io = new Server(res.socket.server);
+    io = new Server(res.socket.server, {
+      cors: { origin: "*" },
+    });
     res.socket.server.io = io;
 
     io.on("connection", (socket) => {
-      console.log("Cliente conectado a Socket.IO");
+      console.log("🟢 Cliente conectado", socket.id);
     });
   }
   res.end();

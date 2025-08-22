@@ -1,51 +1,34 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "../../../lib/db";
-import type { Server as IOServer } from "socket.io";
-
-interface Pedido {
-  nombre: string;
-  cancion: string;
-  dedicatoria?: string;
-  artista?: string;
-  fecha_hora: string;
-}
-
-// Extendemos NextRequest para incluir socket
-interface NextRequestWithSocket extends NextRequest {
-  socket?: {
-    server?: {
-      io?: IOServer;
-    };
-  };
-}
-
-export async function POST(req: NextRequestWithSocket) {
-  const body: Pedido = await req.json();
-  const { nombre, cancion, dedicatoria, artista, fecha_hora } = body;
-
-  const db = await getDb();
-  await db.run(`DELETE FROM pedidos WHERE fecha_hora <= datetime('now', '-3 days')`);
-
-  await db.run(
-    `INSERT INTO pedidos (nombre, cancion, dedicatoria, artista, fecha_hora) VALUES (?, ?, ?, ?, ?)`,
-    nombre,
-    cancion,
-    dedicatoria || "",
-    artista || "",
-    fecha_hora
-  );
-
-  // Emitimos el nuevo pedido vía Socket.IO
-  const io = req.socket?.server?.io;
-  if (io) {
-    io.emit("nuevo_pedido", body);
-  }
-
-  return NextResponse.json({ ok: true });
-}
+// app/api/pedido/route.ts
+import { NextResponse } from "next/server";
+import { prisma } from "../../../lib/db";
 
 export async function GET() {
-  const db = await getDb();
-  const pedidos = await db.all(`SELECT * FROM pedidos ORDER BY id DESC`);
-  return NextResponse.json(pedidos);
+  try {
+    const pedidos = await prisma.pedido.findMany({
+      orderBy: { id: "desc" },
+    });
+    return NextResponse.json(pedidos, { status: 200 });
+  } catch (error) {
+    console.error("Error GET /api/pedido:", error);
+    return NextResponse.json({ error: "Error cargando pedidos" }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const data = await req.json();
+
+    // Borrar pedidos viejos (3 días)
+    await prisma.pedido.deleteMany({
+      where: { fecha_hora: { lte: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) } },
+    });
+
+    const nuevo = await prisma.pedido.create({ data });
+
+    // Retornar el pedido creado
+    return NextResponse.json(nuevo, { status: 201 });
+  } catch (error) {
+    console.error("Error POST /api/pedido:", error);
+    return NextResponse.json({ error: "Error creando pedido" }, { status: 500 });
+  }
 }
